@@ -11,7 +11,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stevenzeiler/bridges-routes"
+    "url": "https://github.com/stevenzeiler/bridges-application"
   },
   "dependencies": {
     "bridges-controller": "^0.1.0",
