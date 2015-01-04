@@ -26,7 +26,7 @@ BridgesSupervisor.prototype.start = function () {
     try {
       Object.keys(_this.processes).forEach(function (name) {
         var proc = new Process(function () {
-          _this.processes[name].call(this, _this.inject);
+          _this.processes[name].apply(this, _this.inject);
         });
         processes.push(_this._supervisor.run(proc, _this.onError));
       });
