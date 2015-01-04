@@ -1,42 +1,40 @@
 "use strict";
 
-var express = require("express");
-var BridgesController = require("bridges-controller");
-var BridgesRoutes = require("bridges-routes");
-var fs = require("fs");
-var path = require("path");
+var Supervisor = require("domain-supervisor").Supervisor;
+var Process = require("domain-supervisor").Process;
+var Promise = require("bluebird");
 
-var BridgesApplication = function BridgesApplication(options) {
-  if (!fs.existsSync(options.root)) {
-    throw new Error("options.root must be a directory");
-  }
-  this.root = options.root;
-  this.server = express();
+var requireAll = require("require-all-to-camel");
 
-  if (!options.controllers) {
-    options.controllers = { inject: [] };
-  }
+var BridgesSupervisor = function BridgesSupervisor(options) {
+  this._supervisor = new Supervisor();
+  this.processes = requireAll(options.directory);
+  this.inject = options.inject || [];
 
-  var controllers = BridgesController.load({
-    directory: path.join(options.root, "/controllers"),
-    inject: options.controllers.inject
-  });
+  this.onError = function (error, restart, crash) {
+    console.log("bridges:supervisor:error:message", error.message);
+    console.log("bridges:supervisor:error:stack", error.stack);
+    console.log("bridges:supervisor:restart");
+    restart();
+  };
+};
 
-  this.server.use("/v1", BridgesRoutes.draw({
-    controllers: controllers,
-    path: path.join(options.root, "config/routes")
-  }));
-
-  this.server.use(function (error, req, res, next) {
-    if (error) {
-      res.status(500).send({
-        success: false,
-        error: error.message
+BridgesSupervisor.prototype.start = function () {
+  var _this = this;
+  return new Promise(function (resolve, reject) {
+    var processes = [];
+    try {
+      Object.keys(_this.processes).forEach(function (name) {
+        var proc = new Process(function () {
+          _this.processes[name].call(this, _this.inject);
+        });
+        processes.push(_this._supervisor.run(proc, _this.onError));
       });
-    } else {
-      next();
+    } catch (error) {
+      return reject(error);
     }
+    resolve(processes);
   });
 };
 
-module.exports = BridgesApplication;
+module.exports = BridgesSupervisor;
