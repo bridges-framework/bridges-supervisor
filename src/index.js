@@ -4,14 +4,13 @@ import onError from './onError'
 
 export default class BridgesSupervisor {
 
-  constructor({directory, inject} = {inject: []}) {
+  constructor({directory, inject = []}) {
     this._supervisor = new Supervisor()
-    this.processes   = new Processes(directory)
-    this.inject      = inject
+    this.processes   = new Processes({directory, inject})
   }
 
   start() {
-    this.processes.asDomains().map(proc => this.supervisor.run(proc, onError))
+    return this.processes.asDomains().map(proc => this._supervisor.run(proc, onError))
   }
 
 }

@@ -2,8 +2,9 @@ import { Process } from 'domain-supervisor'
 import requireAll from 'require-all-to-camel'
 
 export default class Processes {
-  constructor(directory) {
+  constructor({directory, inject}) {
     this._processes = requireAll(directory)
+    this.inject = inject
   }
 
   asDomains() {
@@ -18,7 +19,8 @@ export default class Processes {
 
   iterateWithBlock(predicate) {
     return Object.keys(this._processes).map(key => {
-      return predicate.call(this, key, this[key])
+      console.log('starting process: ', key)
+      return predicate.call(this, key, this._processes[key])
     })
   }
 }
