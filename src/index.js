@@ -7,10 +7,18 @@ export default class BridgesSupervisor {
     this._supervisor = new Supervisor()
     this.processes   = requireAll(directory)
     this.inject      = inject
+
+    Object.defineProperty(this.processes, 'each', {
+      get() {
+        return objectEach
+      }
+    })
   }
 
+  // Use functional iteration in place of for-in
+  // to allow anonymous process definition
   start() {
-    Object.keys(this.processes).forEach(name => {
+    this.processes.each(name => {
       const proc = new Process(() => {
         this.processes[name].apply(null, this.inject)
       })
@@ -27,5 +35,7 @@ function onError(error, restart, crash) {
   restart()
 }
 
-
+function objectEach(predicate) {
+  Object.keys(this).forEach(predicate)
+}
 

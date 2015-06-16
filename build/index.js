@@ -28,14 +28,23 @@ var BridgesSupervisor = (function () {
     this._supervisor = new _domainSupervisor.Supervisor();
     this.processes = (0, _requireAllToCamel2['default'])(directory);
     this.inject = inject;
+
+    Object.defineProperty(this.processes, 'each', {
+      get: function get() {
+        return objectEach;
+      }
+    });
   }
 
   _createClass(BridgesSupervisor, [{
     key: 'start',
+
+    // Use functional iteration in place of for-in
+    // to allow anonymous process definition
     value: function start() {
       var _this = this;
 
-      Object.keys(this.processes).forEach(function (name) {
+      this.processes.each(function (name) {
         var proc = new _domainSupervisor.Process(function () {
           _this.processes[name].apply(null, _this.inject);
         });
@@ -54,5 +63,9 @@ function onError(error, restart, crash) {
   console.log('bridges:supervisor:error:stack', error.stack);
   console.log('bridges:supervisor:restart');
   restart();
+}
+
+function objectEach(predicate) {
+  Object.keys(this).forEach(predicate);
 }
 module.exports = exports['default'];
