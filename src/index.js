@@ -18,9 +18,9 @@ export default class BridgesSupervisor {
   // Use functional iteration in place of for-in
   // to allow anonymous process definition
   start() {
-    this.processes.each(name => {
+    this.processes.each(_, process => {
       const proc = new Process(() => {
-        this.processes[name].apply(null, this.inject)
+        process.apply(null, this.inject)
       })
       return this.supervisor.run(proc, onError)
     })
@@ -36,6 +36,8 @@ function onError(error, restart, crash) {
 }
 
 function objectEach(predicate) {
-  Object.keys(this).forEach(predicate)
+  Object.keys(this).forEach(key => {
+    predicate(key, this[key])
+  })
 }
 

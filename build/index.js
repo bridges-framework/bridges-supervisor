@@ -44,9 +44,9 @@ var BridgesSupervisor = (function () {
     value: function start() {
       var _this = this;
 
-      this.processes.each(function (name) {
+      this.processes.each(_, function (process) {
         var proc = new _domainSupervisor.Process(function () {
-          _this.processes[name].apply(null, _this.inject);
+          process.apply(null, _this.inject);
         });
         return _this.supervisor.run(proc, onError);
       });
@@ -66,6 +66,10 @@ function onError(error, restart, crash) {
 }
 
 function objectEach(predicate) {
-  Object.keys(this).forEach(predicate);
+  var _this2 = this;
+
+  Object.keys(this).forEach(function (key) {
+    predicate(key, _this2[key]);
+  });
 }
 module.exports = exports['default'];
