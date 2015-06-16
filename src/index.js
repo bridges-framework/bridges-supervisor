@@ -1,40 +1,17 @@
-import {Supervisor, Process} from 'domain-supervisor'
-import * as Promise          from 'bluebird'
-var requireAll = require('require-all-to-camel')
+import { Supervisor } from 'domain-supervisor'
+import Processes from './processes'
+import onError from './onError'
 
-class BridgesSupervisor {
+export default class BridgesSupervisor {
 
-  constructor(options) {
+  constructor({directory, inject = []}) {
     this._supervisor = new Supervisor()
-    this.processes   = requireAll(options.directory)
-    this.inject      = options.inject || []
-
-    this.onError = function(error, restart, crash) {
-      console.log('bridges:supervisor:error:message', error.message)
-      console.log('bridges:supervisor:error:stack'  , error.stack);
-      console.log('bridges:supervisor:restart')
-      restart();
-    }
+    this.processes   = new Processes({directory, inject})
   }
 
   start() {
-    var _this = this
-    return new Promise(function(resolve, reject) {
-      var processes = []
-      try {
-        Object.keys(_this.processes).forEach(function(name) {
-          var proc  = new Process(function() {
-            _this.processes[name].apply(this, _this.inject)
-          })
-          processes.push(_this._supervisor.run(proc, _this.onError))
-        })
-      } catch (error) {
-        return reject(error)
-      }
-      resolve(processes)
-    })
+    return this.processes.asDomains().map(proc => this._supervisor.run(proc, onError))
   }
-}
 
-module.exports = BridgesSupervisor
+}
 
