@@ -26,28 +26,16 @@ var BridgesSupervisor = (function () {
     _classCallCheck(this, BridgesSupervisor);
 
     this._supervisor = new _domainSupervisor.Supervisor();
-    this.processes = (0, _requireAllToCamel2['default'])(directory);
+    this.processes = new Processes(directory);
     this.inject = inject;
-
-    Object.defineProperty(this.processes, 'each', {
-      get: function get() {
-        return objectEach;
-      }
-    });
   }
 
   _createClass(BridgesSupervisor, [{
     key: 'start',
-
-    // Use functional iteration in place of for-in
-    // to allow anonymous process definition
     value: function start() {
       var _this = this;
 
-      this.processes.each(_, function (process) {
-        var proc = new _domainSupervisor.Process(function () {
-          process.apply(null, _this.inject);
-        });
+      this.processes.asDomains().map(function (proc) {
         return _this.supervisor.run(proc, onError);
       });
     }
@@ -58,18 +46,47 @@ var BridgesSupervisor = (function () {
 
 exports['default'] = BridgesSupervisor;
 
+var Processes = (function () {
+  function Processes(directory) {
+    _classCallCheck(this, Processes);
+
+    this._processes = (0, _requireAllToCamel2['default'])(directory);
+  }
+
+  _createClass(Processes, [{
+    key: 'asDomains',
+    value: function asDomains() {
+      return this.iterateWithBlock(this.wrapInDomain);
+    }
+  }, {
+    key: 'wrapInDomain',
+    value: function wrapInDomain(_, process) {
+      var _this2 = this;
+
+      var context = arguments[2] === undefined ? null : arguments[2];
+
+      return new _domainSupervisor.Process(function () {
+        process.apply(context, _this2.inject);
+      });
+    }
+  }, {
+    key: 'iterateWithBlock',
+    value: function iterateWithBlock(predicate) {
+      var _this3 = this;
+
+      return Object.keys(this._processes).map(function (key) {
+        return predicate.call(_this3, key, _this3[key]);
+      });
+    }
+  }]);
+
+  return Processes;
+})();
+
 function onError(error, restart, crash) {
   console.log('bridges:supervisor:error:message', error.message);
   console.log('bridges:supervisor:error:stack', error.stack);
   console.log('bridges:supervisor:restart');
   restart();
-}
-
-function objectEach(predicate) {
-  var _this2 = this;
-
-  Object.keys(this).forEach(function (key) {
-    predicate(key, _this2[key]);
-  });
 }
 module.exports = exports['default'];
